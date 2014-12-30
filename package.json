@@ -1,0 +1,36 @@
+{
+  "name": "wartremover",
+  "version": "1.0.0",
+  "description": "stream transform to turn bunyan json log entries into plaintext",
+  "keywords": [ "bunyan" ],
+  "author": "Robey Pointer <robeypointer@gmail.com>",
+  "homepage": "https://github.com/robey/node-wartremover",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/robey/node-wartremover.git"
+  },
+  "licenses": [
+    {
+      "type": "Apache License 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+    }
+  ],
+  "dependencies": {
+    "clicolor": "*",
+    "sprintf": "*"
+  },
+  "devDependencies": {
+    "bunyan": "*",
+    "coffee-script": "^1.7",
+    "mocha": "*",
+    "should": "*"
+  },
+  "main": "./lib/wartremover",
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "prepublish": "./node_modules/.bin/coffee -o lib -c src",
+    "test": "./node_modules/.bin/mocha -R spec --colors --compilers coffee:coffee-script/register"
+  }
+}
