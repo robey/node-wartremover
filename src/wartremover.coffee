@@ -1,7 +1,9 @@
-cli = require "clicolor"
+clicolor = require "clicolor"
 sprintf = require "sprintf"
 stream = require "stream"
 util = require "util"
+
+cli = clicolor.cli()
 
 # "2014-12-30T00:11:17.713Z" -> "[20141230-00:11:17.713]"
 formatDate = (date) ->
