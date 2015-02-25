@@ -20,8 +20,8 @@
     "sprintf": "*"
   },
   "devDependencies": {
+    "babel": "*",
     "bunyan": "*",
-    "coffee-script": "^1.7",
     "mocha": "*",
     "should": "*"
   },
@@ -30,7 +30,7 @@
     "lib"
   ],
   "scripts": {
-    "prepublish": "./node_modules/.bin/coffee -o lib -c src",
-    "test": "./node_modules/.bin/mocha -R spec --colors --compilers coffee:coffee-script/register"
+    "prepublish": "babel --source-maps --out-dir lib src && babel --source-maps --out-dir test/lib test/src",
+    "test": "mocha -R spec --colors test/lib"
   }
 }

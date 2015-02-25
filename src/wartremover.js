@@ -1,0 +1,122 @@
+const clicolor = require("clicolor");
+const sprintf = require("sprintf");
+const stream = require("stream");
+const util = require("util");
+
+const cli = clicolor.cli();
+
+// "2014-12-30T00:11:17.713Z" -> "[20141230-00:11:17.713]"
+function formatDate(date) {
+  return "[" + date.slice(0, 4) + date.slice(5, 7) + date.slice(8, 10) + "-" + date.slice(11, 23) + "]";
+}
+
+function levelString(level) {
+  return {
+    10: "TRACE",
+    20: "DEBUG",
+    30: "INFO",
+    40: "WARNING",
+    50: "ERROR",
+    60: "FATAL"
+  }[level];
+}
+
+// remove any control chars. unicode may stay, for now.
+function clean(s) {
+  return s.replace(/[\u0000-\u001f]/g, (m) => sprintf("\\x%02x", m.charCodeAt(0)));
+}
+
+function format(record, stringifiers = {}) {
+  let date = formatDate(record.time);
+  let level = levelString(record.level);
+  let levelName = level.slice(0, 3);
+  delete record.v;
+  delete record.time;
+  delete record.level;
+
+  // ignore: pid, hostname
+  delete record.pid;
+  delete record.hostname;
+
+  let name = record.name;
+  delete record.name;
+  let messages = [ clean(record.msg) ];
+  delete record.msg;
+
+  let source = "";
+  if (record.src && record.src.file) {
+    if (record.src.func) {
+      source = `(${record.src.file}:${record.src.line} in ${record.src.func}) `;
+    } else {
+      source = `(${record.src.file}:${record.src.line}) `;
+    }
+    source = cli.color("green", source);
+    delete rec.src;
+  }
+
+  if (record.err && record.err.stack) {
+    messages = messages.concat(record.err.stack.split("\n").filter((line) => line.length > 0));
+    delete record.err;
+  }
+
+  // leftover keys are user-defined
+  for (let key in record) {
+    let value = record[key];
+    if (stringifiers[key]) {
+      messages[0] += " " + stringifiers[key](value);
+    } else {
+      if (typeof(value) != "string") value = JSON.stringify(value);
+      messages[0] += ` ${key}=${value}`;
+    }
+  }
+
+  // colorize
+  if ([ "TRACE", "DEBUG", "INFO" ].indexOf(level) >= 0) {
+    date = cli.color("dim", date).toString();
+    levelName = cli.color("dim", levelName).toString();
+  }
+  let lines = messages.map((line) => `${date} ${levelName} ${source}${name}: ${line}`);
+  if (level == "WARNING") lines = lines.map((line) => cli.color("warning", line).toString());
+  if (level == "ERROR") lines = lines.map((line) => cli.color("error", line).toString());
+  return lines.join("\n") + "\n";
+}
+
+
+class WartRemover extends stream.Transform {
+  constructor(options = {}) {
+    super();
+    this.buffer = "";
+    if (options.color == null) options.color = true;
+    if (options.stringifiers == null) options.stringifiers = {};
+    cli.useColor(options.color);
+    this.stringifiers = options.stringifiers;
+  }
+
+  _transform(chunk, encoding, callback) {
+    const lines = (this.buffer + chunk.toString()).split("\n");
+    this.buffer = lines.pop();
+    lines.forEach((line) => this.process(line));
+    callback();
+  }
+
+  _flush(callback) {
+    if (this.buffer.length > 0) this.process(this.buffer);
+    this.buffer = "";
+    callback();
+  }
+
+  process(line) {
+    let record = null;
+    try {
+      record = JSON.parse(line);
+    } catch (error) {
+      // not json.
+      this.push(new Buffer(line));
+      return;
+    }
+    this.push(new Buffer(format(record, this.stringifiers)));
+  }
+}
+
+
+exports.WartRemover = WartRemover;
