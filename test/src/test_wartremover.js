@@ -59,11 +59,13 @@ describe("wartremover", () => {
     function stringifyRequest(req) {
       return `url=${req.url} method=${req.method} code=${req.responseCode}`;
     };
-    const wart = new wartremover.WartRemover({ color: false, stringifiers: { req: stringifyRequest } });
+    function dropEggs(eggs) { return null; }
+
+    const wart = new wartremover.WartRemover({ color: false, stringifiers: { req: stringifyRequest, eggs: dropEggs } });
     const sink = new SinkStream();
     wart.pipe(sink);
     const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart } ] });
-    log.debug({ time: FAKE_TIME, req: { method: "GET", url: "/lamp", responseCode: "200" } }, "Okay.");
+    log.debug({ time: FAKE_TIME, req: { method: "GET", url: "/lamp", responseCode: "200" }, eggs: 10 }, "Okay.");
     wart.end();
     sink.on("finish", () => {
       sink.getBuffer().toString().should.eql("[20141230-04:20:00.000] DEB test: Okay. url=/lamp method=GET code=200\n");

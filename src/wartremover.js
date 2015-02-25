@@ -63,7 +63,8 @@ function format(record, stringifiers = {}) {
   for (let key in record) {
     let value = record[key];
     if (stringifiers[key]) {
-      messages[0] += " " + stringifiers[key](value);
+      value = stringifiers[key](value);
+      if (value != null) messages[0] += " " + value;
     } else {
       if (typeof(value) != "string") value = JSON.stringify(value);
       messages[0] += ` ${key}=${value}`;
