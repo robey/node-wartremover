@@ -26,7 +26,7 @@ function clean(s) {
   return s.replace(/[\u0000-\u001f]/g, (m) => sprintf("\\x%02x", m.charCodeAt(0)));
 }
 
-function format(record, stringifiers = {}) {
+function format(record, stringifiers = {}, headerFields = {}) {
   let date = formatDate(record.time);
   let level = levelString(record.level);
   let levelName = level.slice(0, 3);
@@ -60,23 +60,34 @@ function format(record, stringifiers = {}) {
   }
 
   // leftover keys are user-defined
-  for (let key in record) {
+  let headers = "";
+  Object.keys(record).sort().forEach((key) => {
     let value = record[key];
     if (stringifiers[key]) {
       value = stringifiers[key](value);
-      if (value != null) messages[0] += " " + value;
+      if (value != null) {
+        if (headerFields[key]) {
+          headers += " " + value;
+        } else {
+          messages[0] += " " + value;
+        }
+      }
     } else {
       if (typeof(value) != "string") value = JSON.stringify(value);
-      messages[0] += ` ${key}=${value}`;
+      if (headerFields[key]) {
+        headers += ` ${key}=${value}`;
+      } else {
+        messages[0] += ` ${key}=${value}`;
+      }
     }
-  }
+  });
 
   // colorize
   if ([ "TRACE", "DEBUG", "INFO" ].indexOf(level) >= 0) {
     date = cli.color("dim", date).toString();
     levelName = cli.color("dim", levelName).toString();
   }
-  let lines = messages.map((line) => `${date} ${levelName} ${source}${name}: ${line}`);
+  let lines = messages.map((line) => `${date} ${levelName} ${source}${name}${headers}: ${line}`);
   if (level == "WARNING") lines = lines.map((line) => cli.color("warning", line).toString());
   if (level == "ERROR") lines = lines.map((line) => cli.color("error", line).toString());
   return lines.join("\n") + "\n";
@@ -91,6 +102,8 @@ class WartRemover extends stream.Transform {
     if (options.stringifiers == null) options.stringifiers = {};
     cli.useColor(options.color);
     this.stringifiers = options.stringifiers;
+    this.headerFields = {};
+    if (options.headerFields) options.headerFields.forEach((f) => this.headerFields[f] = true);
   }
 
   _transform(chunk, encoding, callback) {
@@ -115,7 +128,7 @@ class WartRemover extends stream.Transform {
       this.push(new Buffer(line));
       return;
     }
-    this.push(new Buffer(format(record, this.stringifiers)));
+    this.push(new Buffer(format(record, this.stringifiers, this.headerFields)));
   }
 }
 

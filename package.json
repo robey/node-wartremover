@@ -25,7 +25,8 @@
     "babel": "*",
     "bunyan": "*",
     "mocha": "*",
-    "should": "*"
+    "should": "*",
+    "source-map-support": "*"
   },
   "main": "./lib/wartremover",
   "files": [

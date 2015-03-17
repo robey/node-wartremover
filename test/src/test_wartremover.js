@@ -4,6 +4,7 @@ const stream = require("stream");
 const wartremover = require("../../lib/wartremover");
 const util = require("util");
 
+require("source-map-support").install();
 
 // simple writable stream that collects all incoming data and provides it in a single (combined) buffer.
 class SinkStream extends stream.Writable {
@@ -72,4 +73,33 @@ describe("wartremover", () => {
       done();
     });
   });
+
+  it("can log header fields", (done) => {
+    const wart = new wartremover.WartRemover({
+      color: false,
+      stringifiers: {
+        ants: (count) => "ANTS/" + count + "/",
+        module: (name) => "<" + name + ">",
+        span: (name) => "{" + name + "}",
+        zebras: (count) => "ZEBRAS*" + count + "*"
+      },
+      headerFields: [ "module", "span" ]
+    });
+    const sink = new SinkStream();
+    wart.pipe(sink);
+    const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart } ] });
+
+    log.debug({ time: FAKE_TIME, zebras: 5, span: "wing", module: "query", ants: 2 }, "Okay.");
+    log.debug({ time: FAKE_TIME, ants: 10, span: "ish" }, "Bye!");
+
+    wart.end();
+    sink.on("finish", () => {
+      sink.getBuffer().toString().should.eql([
+        "[20141230-04:20:00.000] DEB test <query> {wing}: Okay. ANTS/2/ ZEBRAS*5*\n",
+        "[20141230-04:20:00.000] DEB test {ish}: Bye! ANTS/10/\n",
+      ].join(""));
+      done();
+    });
+
+  })
 });
