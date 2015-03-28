@@ -7,6 +7,7 @@ const cli = clicolor.cli();
 
 // "2014-12-30T00:11:17.713Z" -> "[20141230-00:11:17.713]"
 function formatDate(date) {
+  if (date instanceof Date) date = date.toISOString();
   return "[" + date.slice(0, 4) + date.slice(5, 7) + date.slice(8, 10) + "-" + date.slice(11, 23) + "]";
 }
 
@@ -96,7 +97,7 @@ function format(record, stringifiers = {}, headerFields = {}) {
 
 class WartRemover extends stream.Transform {
   constructor(options = {}) {
-    super();
+    super({ objectMode: true });
     this.buffer = "";
     if (options.color == null) options.color = true;
     if (options.stringifiers == null) options.stringifiers = {};
@@ -107,6 +108,11 @@ class WartRemover extends stream.Transform {
   }
 
   _transform(chunk, encoding, callback) {
+    if (typeof chunk == "object") {
+      this.process(chunk);
+      callback();
+      return;
+    }
     const lines = (this.buffer + chunk.toString()).split("\n");
     this.buffer = lines.pop();
     lines.forEach((line) => this.process(line));
@@ -122,7 +128,11 @@ class WartRemover extends stream.Transform {
   process(line) {
     let record = null;
     try {
-      record = JSON.parse(line);
+      if (typeof line == "object") {
+        record = line;
+      } else {
+        record = JSON.parse(line);
+      }
     } catch (error) {
       // not json.
       this.push(new Buffer(line));

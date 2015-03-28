@@ -100,6 +100,22 @@ describe("wartremover", () => {
       ].join(""));
       done();
     });
+  });
 
+  it("logs errors", (done) => {
+    const wart = new wartremover.WartRemover();
+    const sink = new SinkStream();
+    wart.pipe(sink);
+    const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart, type: "raw" } ] });
+
+    const e = new Error("oops!");
+    log.error({ err: e }, "Oh no!");
+    wart.end();
+    sink.on("finish", () => {
+      const buffer = sink.getBuffer().toString();
+      (buffer.match(/Error: oops!/) != null).should.eql(true);
+      (buffer.match(/test_wartremover\.js/) != null).should.eql(true);
+      done();
+    });
   })
 });
