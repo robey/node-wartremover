@@ -109,7 +109,10 @@ class WartRemover extends stream.Transform {
 
   _transform(chunk, encoding, callback) {
     if (typeof chunk == "object") {
-      this.process(chunk);
+      // make a shallow copy, so we don't mess up other streams.
+      const obj = {};
+      for (let k in chunk) obj[k] = chunk[k];
+      this.process(obj);
       callback();
       return;
     }
