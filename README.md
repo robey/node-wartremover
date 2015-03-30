@@ -49,6 +49,8 @@ stringifiers: {
 }
 ```
 
+- `headerFields`: array, a list of fields that should appear in the header, at the beginning of the log line, instead of attached to the end
+
 
 # License
 
