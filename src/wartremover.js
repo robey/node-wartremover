@@ -1,9 +1,10 @@
-const clicolor = require("clicolor");
-const sprintf = require("sprintf");
-const stream = require("stream");
-const util = require("util");
+"use strict";
 
-const cli = clicolor.cli();
+import { clicolor } from "clicolor";
+import sprintf from "sprintf";
+import stream from "stream";
+
+const cli = clicolor();
 
 // "2014-12-30T00:11:17.713Z" -> "[20141230-00:11:17.713]"
 function formatDate(date) {
@@ -95,7 +96,7 @@ function format(record, stringifiers = {}, headerFields = {}) {
 }
 
 
-class WartRemover extends stream.Transform {
+export default class WartRemover extends stream.Transform {
   constructor(options = {}) {
     super({ objectMode: true });
     this.buffer = "";
@@ -144,6 +145,3 @@ class WartRemover extends stream.Transform {
     this.push(new Buffer(format(record, this.stringifiers, this.headerFields)));
   }
 }
-
-
-exports.WartRemover = WartRemover;

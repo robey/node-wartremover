@@ -1,10 +1,9 @@
-const bunyan = require("bunyan");
-const should = require("should");
-const stream = require("stream");
-const wartremover = require("../../lib/wartremover");
-const util = require("util");
+import bunyan from "bunyan";
+import stream from "stream";
+import WartRemover from "../../lib/wartremover";
 
-require("source-map-support").install();
+import "should";
+import "source-map-support/register";
 
 // simple writable stream that collects all incoming data and provides it in a single (combined) buffer.
 class SinkStream extends stream.Writable {
@@ -31,7 +30,7 @@ const FAKE_TIME = "2014-12-30T04:20:00.000Z";
 
 describe("wartremover", () => {
   it("generates strings", (done) => {
-    const wart = new wartremover.WartRemover();
+    const wart = new WartRemover();
     const sink = new SinkStream();
     wart.pipe(sink);
     const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart } ] });
@@ -44,7 +43,7 @@ describe("wartremover", () => {
   });
 
   it("can be told not to use color", (done) => {
-    const wart = new wartremover.WartRemover({ color: false });
+    const wart = new WartRemover({ color: false });
     const sink = new SinkStream();
     wart.pipe(sink);
     const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart } ] });
@@ -62,7 +61,7 @@ describe("wartremover", () => {
     };
     function dropEggs(eggs) { return null; }
 
-    const wart = new wartremover.WartRemover({ color: false, stringifiers: { req: stringifyRequest, eggs: dropEggs } });
+    const wart = new WartRemover({ color: false, stringifiers: { req: stringifyRequest, eggs: dropEggs } });
     const sink = new SinkStream();
     wart.pipe(sink);
     const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart } ] });
@@ -75,7 +74,7 @@ describe("wartremover", () => {
   });
 
   it("can log header fields", (done) => {
-    const wart = new wartremover.WartRemover({
+    const wart = new WartRemover({
       color: false,
       stringifiers: {
         ants: (count) => "ANTS/" + count + "/",
@@ -103,7 +102,7 @@ describe("wartremover", () => {
   });
 
   it("logs errors", (done) => {
-    const wart = new wartremover.WartRemover();
+    const wart = new WartRemover();
     const sink = new SinkStream();
     wart.pipe(sink);
     const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart, type: "raw" } ] });

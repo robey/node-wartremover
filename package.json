@@ -33,6 +33,7 @@
     "lib"
   ],
   "scripts": {
+    "build": "npm run prepublish",
     "prepublish": "babel --source-maps --out-dir lib src && babel --source-maps --out-dir test/lib test/src",
     "test": "mocha -R spec --colors test/lib"
   }
