@@ -1,3 +1,8 @@
+## 2.0.0 (18 aug 2015)
+
+- upgraded clicolor.
+- converted to using import/export, which accidentally changed the API.
+
 ## 1.2.2 (30 mar 2015)
 
 - fixed a bug where wartremover was modifying the log record object, confusing the hell out of other stream processors (now we make a shallow copy before attacking it)
