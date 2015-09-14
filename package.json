@@ -18,7 +18,7 @@
     }
   ],
   "dependencies": {
-    "clicolor": "^1.1.0",
+    "clicolor": "^2.0.1",
     "sprintf": "*"
   },
   "devDependencies": {

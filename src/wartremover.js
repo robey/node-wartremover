@@ -1,6 +1,6 @@
 "use strict";
 
-import { clicolor } from "clicolor";
+import clicolor from "clicolor";
 import sprintf from "sprintf";
 import stream from "stream";
 
