@@ -1,3 +1,7 @@
+## 2.0.1 (14 sep 2015)
+
+- upgraded clicolor.
+
 ## 2.0.0 (18 aug 2015)
 
 - upgraded clicolor.
