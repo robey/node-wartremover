@@ -28,7 +28,7 @@ function clean(s) {
   return s.replace(/[\u0000-\u001f]/g, (m) => sprintf("\\x%02x", m.charCodeAt(0)));
 }
 
-function format(record, stringifiers = {}, headerFields = {}) {
+function format(record, stringifiers = {}, headerFields = {}, useColor) {
   let date = formatDate(record.time);
   let levelName = levelString(record.level).slice(0, 3);
   delete record.v;
@@ -84,12 +84,12 @@ function format(record, stringifiers = {}, headerFields = {}) {
   });
 
   // colorize
-  if (this.useColor && [ "TRA", "DEB", "INF" ].indexOf(levelName) >= 0) {
+  if (useColor && [ "TRA", "DEB", "INF" ].indexOf(levelName) >= 0) {
     date = cli.color("dim", date).toString();
     levelName = cli.color("dim", levelName).toString();
   }
   let lines = messages.map(line => `${date} ${levelName} ${source}${name}${headers}: ${line}`);
-  if (this.useColor) {
+  if (useColor) {
     if (levelName == "WAR") lines = lines.map(line => cli.color("warning", line).toString());
     if (levelName == "ERR") lines = lines.map(line => cli.color("error", line).toString());
   }
@@ -144,6 +144,6 @@ export default class WartRemover extends stream.Transform {
       this.push(new Buffer(line));
       return;
     }
-    this.push(new Buffer(format(record, this.stringifiers, this.headerFields)));
+    this.push(new Buffer(format(record, this.stringifiers, this.headerFields, this.useColor)));
   }
 }
