@@ -30,8 +30,7 @@ function clean(s) {
 
 function format(record, stringifiers = {}, headerFields = {}) {
   let date = formatDate(record.time);
-  let level = levelString(record.level);
-  let levelName = level.slice(0, 3);
+  let levelName = levelString(record.level).slice(0, 3);
   delete record.v;
   delete record.time;
   delete record.level;
@@ -57,13 +56,13 @@ function format(record, stringifiers = {}, headerFields = {}) {
   }
 
   if (record.err && record.err.stack) {
-    messages = messages.concat(record.err.stack.split("\n").filter((line) => line.length > 0));
+    messages = messages.concat(record.err.stack.split("\n").filter(line => line.length > 0));
     delete record.err;
   }
 
   // leftover keys are user-defined
   let headers = "";
-  Object.keys(record).sort().forEach((key) => {
+  Object.keys(record).sort().forEach(key => {
     let value = record[key];
     if (stringifiers[key]) {
       value = stringifiers[key](value);
@@ -85,13 +84,15 @@ function format(record, stringifiers = {}, headerFields = {}) {
   });
 
   // colorize
-  if ([ "TRACE", "DEBUG", "INFO" ].indexOf(level) >= 0) {
+  if (this.useColor && [ "TRA", "DEB", "INF" ].indexOf(levelName) >= 0) {
     date = cli.color("dim", date).toString();
     levelName = cli.color("dim", levelName).toString();
   }
-  let lines = messages.map((line) => `${date} ${levelName} ${source}${name}${headers}: ${line}`);
-  if (level == "WARNING") lines = lines.map((line) => cli.color("warning", line).toString());
-  if (level == "ERROR") lines = lines.map((line) => cli.color("error", line).toString());
+  let lines = messages.map(line => `${date} ${levelName} ${source}${name}${headers}: ${line}`);
+  if (this.useColor) {
+    if (levelName == "WAR") lines = lines.map(line => cli.color("warning", line).toString());
+    if (levelName == "ERR") lines = lines.map(line => cli.color("error", line).toString());
+  }
   return lines.join("\n") + "\n";
 }
 
@@ -105,7 +106,8 @@ export default class WartRemover extends stream.Transform {
     cli.useColor(options.color);
     this.stringifiers = options.stringifiers;
     this.headerFields = {};
-    if (options.headerFields) options.headerFields.forEach((f) => this.headerFields[f] = true);
+    if (options.headerFields) options.headerFields.forEach(f => this.headerFields[f] = true);
+    this.useColor = options.color;
   }
 
   _transform(chunk, encoding, callback) {
