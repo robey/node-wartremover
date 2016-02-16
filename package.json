@@ -1,6 +1,6 @@
 {
   "name": "wartremover",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "stream transform to turn bunyan json log entries into plaintext",
   "keywords": [
     "bunyan"
