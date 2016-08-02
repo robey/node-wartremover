@@ -1,8 +1,7 @@
 "use strict";
 
-import clicolor from "clicolor";
-import sprintf from "sprintf";
-import stream from "stream";
+const clicolor = require("clicolor");
+const stream = require("stream");
 
 const cli = clicolor();
 
@@ -25,7 +24,11 @@ function levelString(level) {
 
 // remove any control chars. unicode may stay, for now.
 function clean(s) {
-  return s.replace(/[\u0000-\u001f]/g, (m) => sprintf("\\x%02x", m.charCodeAt(0)));
+  return s.replace(/[\u0000-\u001f]/g, m => hexify(m.charCodeAt(0)));
+}
+
+function hexify(n) {
+  return "\\u" + ("0000" + n.toString(16)).slice(-2);
 }
 
 function format(record, stringifiers = {}, headerFields = {}, useColor) {
@@ -39,7 +42,7 @@ function format(record, stringifiers = {}, headerFields = {}, useColor) {
   delete record.pid;
   delete record.hostname;
 
-  let name = record.name;
+  const name = record.name;
   delete record.name;
   let messages = [ clean(record.msg) ];
   delete record.msg;
@@ -52,7 +55,7 @@ function format(record, stringifiers = {}, headerFields = {}, useColor) {
       source = `(${record.src.file}:${record.src.line}) `;
     }
     source = cli.color("green", source);
-    delete rec.src;
+    delete record.src;
   }
 
   if (record.err && record.err.stack) {
@@ -97,7 +100,7 @@ function format(record, stringifiers = {}, headerFields = {}, useColor) {
 }
 
 
-export default class WartRemover extends stream.Transform {
+class WartRemover extends stream.Transform {
   constructor(options = {}) {
     super({ objectMode: true });
     this.buffer = "";
@@ -114,7 +117,7 @@ export default class WartRemover extends stream.Transform {
     if (typeof chunk == "object") {
       // make a shallow copy, so we don't mess up other streams.
       const obj = {};
-      for (let k in chunk) obj[k] = chunk[k];
+      for (const k in chunk) obj[k] = chunk[k];
       this.process(obj);
       callback();
       return;
@@ -147,3 +150,6 @@ export default class WartRemover extends stream.Transform {
     this.push(new Buffer(format(record, this.stringifiers, this.headerFields, this.useColor)));
   }
 }
+
+
+module.exports = WartRemover;

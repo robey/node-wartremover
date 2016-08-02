@@ -1,9 +1,10 @@
-import bunyan from "bunyan";
-import stream from "stream";
-import WartRemover from "../../lib/wartremover";
+"use strict";
 
-import "should";
-import "source-map-support/register";
+const bunyan = require("bunyan");
+const stream = require("stream");
+const WartRemover = require("../../src/wartremover");
+
+require("should");
 
 // simple writable stream that collects all incoming data and provides it in a single (combined) buffer.
 class SinkStream extends stream.Writable {
@@ -58,8 +59,9 @@ describe("wartremover", () => {
   it("can be trained to stringify odd json objects", (done) => {
     function stringifyRequest(req) {
       return `url=${req.url} method=${req.method} code=${req.responseCode}`;
-    };
-    function dropEggs(eggs) { return null; }
+    }
+
+    function dropEggs(_eggs) { return null; }
 
     const wart = new WartRemover({ color: false, stringifiers: { req: stringifyRequest, eggs: dropEggs } });
     const sink = new SinkStream();
@@ -95,7 +97,7 @@ describe("wartremover", () => {
     sink.on("finish", () => {
       sink.getBuffer().toString().should.eql([
         "[20141230-04:20:00.000] DEB test <query> {wing}: Okay. ANTS/2/ ZEBRAS*5*\n",
-        "[20141230-04:20:00.000] DEB test {ish}: Bye! ANTS/10/\n",
+        "[20141230-04:20:00.000] DEB test {ish}: Bye! ANTS/10/\n"
       ].join(""));
       done();
     });
@@ -116,5 +118,5 @@ describe("wartremover", () => {
       (buffer.match(/test_wartremover\.js/) != null).should.eql(true);
       done();
     });
-  })
+  });
 });

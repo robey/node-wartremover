@@ -11,30 +11,27 @@
     "type": "git",
     "url": "git://github.com/robey/node-wartremover.git"
   },
-  "licenses": [
-    {
-      "type": "Apache License 2.0",
-      "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
-    }
-  ],
+  "license": "Apache-2.0",
   "dependencies": {
-    "clicolor": "^2.0.1",
-    "sprintf": "*"
+    "clicolor": "^2.0.1"
   },
   "devDependencies": {
-    "babel": "*",
-    "bunyan": "*",
-    "mocha": "*",
-    "should": "*",
-    "source-map-support": "*"
+    "bunyan": "^1.8.1",
+    "eslint": "^1.4.1",
+    "mocha": "^3.0.0",
+    "should": "^10.0.0"
   },
   "main": "./lib/wartremover",
   "files": [
     "lib"
   ],
+  "engines": {
+    "node": ">=6.3.0"
+  },
   "scripts": {
-    "build": "npm run prepublish",
-    "prepublish": "babel --source-maps --out-dir lib src && babel --source-maps --out-dir test/lib test/src",
-    "test": "npm run build && mocha -R spec --colors test/lib"
+    "build": "eslint src test/src",
+    "distclean": "rm -rf node_modules npm_debug.log",
+    "prepublish": "npm run build",
+    "test": "npm run build && mocha -R spec --colors test/src"
   }
 }
