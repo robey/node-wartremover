@@ -119,9 +119,9 @@ class WartRemover extends stream.Transform {
       const obj = {};
       for (const k in chunk) obj[k] = chunk[k];
       this.process(obj);
-      callback();
-      return;
+      return callback();
     }
+
     const lines = (this.buffer + chunk.toString()).split("\n");
     this.buffer = lines.pop();
     lines.forEach((line) => this.process(line));
