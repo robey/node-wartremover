@@ -1,19 +1,20 @@
-"use strict";
+import * as bunyan from "bunyan";
+import * as stream from "stream";
+import { WartRemover } from "../wartremover";
 
-const bunyan = require("bunyan");
-const stream = require("stream");
-const WartRemover = require("../../src/wartremover");
-
-require("should");
+import "should";
+import "source-map-support/register";
 
 // simple writable stream that collects all incoming data and provides it in a single (combined) buffer.
 class SinkStream extends stream.Writable {
+  private buffers: Buffer[] = [];
+
   constructor(options = {}) {
     super(options);
     this.buffers = [];
   }
 
-  _write(chunk, encoding, callback) {
+  _write(chunk: Buffer, encoding: string, callback: () => void) {
     this.buffers.push(chunk);
     callback();
   }
@@ -57,17 +58,23 @@ describe("wartremover", () => {
   });
 
   it("can be trained to stringify odd json objects", (done) => {
-    function stringifyRequest(req) {
+    interface Req {
+      method: string;
+      url: string;
+      responseCode: number;
+    }
+
+    function stringifyRequest(req: Req) {
       return `url=${req.url} method=${req.method} code=${req.responseCode}`;
     }
 
-    function dropEggs(_eggs) { return null; }
+    function dropEggs(_eggs: any) { return null; }
 
     const wart = new WartRemover({ color: false, stringifiers: { req: stringifyRequest, eggs: dropEggs } });
     const sink = new SinkStream();
     wart.pipe(sink);
     const log = bunyan.createLogger({ name: "test", streams: [ { level: "trace", stream: wart } ] });
-    log.debug({ time: FAKE_TIME, req: { method: "GET", url: "/lamp", responseCode: "200" }, eggs: 10 }, "Okay.");
+    log.debug({ time: FAKE_TIME, req: { method: "GET", url: "/lamp", responseCode: 200 }, eggs: 10 }, "Okay.");
     wart.end();
     sink.on("finish", () => {
       sink.getBuffer().toString().should.eql("[20141230-04:20:00.000] DEB test: Okay. url=/lamp method=GET code=200\n");
@@ -115,7 +122,7 @@ describe("wartremover", () => {
     sink.on("finish", () => {
       const buffer = sink.getBuffer().toString();
       (buffer.match(/Error: oops!/) != null).should.eql(true);
-      (buffer.match(/test_wartremover\.js/) != null).should.eql(true);
+      (buffer.match(/test_wartremover\.ts/) != null).should.eql(true);
       done();
     });
   });

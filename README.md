@@ -10,12 +10,12 @@ Unlike bunyan, it enforces a "one log entry per line" policy. Every line must be
 Example:
 
 ```javascript
-import bunyan from "bunyan";
-import WartRemover from "wartremover";
+import * as bunyan from "bunyan";
+import { WartRemover } from "wartremover";
 
-var wart = new WartRemover();
+const wart = new WartRemover();
 wart.pipe(process.stdout);
-var log = bunyan.createLogger({ name: "myserver", streams: [ { level: "debug", stream: wart } ]);
+const log = bunyan.createLogger({ name: "myserver", streams: [ { level: "debug", stream: wart } ]);
 
 log.info("I am writing a debug message!");
 ```
