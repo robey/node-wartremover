@@ -25,7 +25,8 @@
     "should": "^10.0.0",
     "source-map-support": "^0.4.6"
   },
-  "main": "./lib/wartremover",
+  "main": "./lib/wartremover.js",
+  "types": "./lib/wartremover.d.ts",
   "files": [
     "lib"
   ],
