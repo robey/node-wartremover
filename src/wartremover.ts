@@ -1,17 +1,32 @@
-"use strict";
-
-const clicolor = require("clicolor");
-const stream = require("stream");
+import * as stream from "stream"
+import { clicolor } from "clicolor";
 
 const cli = clicolor();
 
+interface LogRecord {
+  v: number;
+  pid: number;
+  hostname: string;
+  name: string;
+  level: number;
+  time: string;
+  msg: string;
+
+  err?: Error;
+  src?: {
+    file: string;
+    line: number;
+    func?: string;
+  }
+}
+
 // "2014-12-30T00:11:17.713Z" -> "[20141230-00:11:17.713]"
-function formatDate(date) {
+function formatDate(date: Date | string): string {
   if (date instanceof Date) date = date.toISOString();
   return "[" + date.slice(0, 4) + date.slice(5, 7) + date.slice(8, 10) + "-" + date.slice(11, 23) + "]";
 }
 
-function levelString(level) {
+function levelString(level: number): string {
   return {
     10: "TRACE",
     20: "DEBUG",
@@ -23,15 +38,20 @@ function levelString(level) {
 }
 
 // remove any control chars. unicode may stay, for now.
-function clean(s) {
+function clean(s: string): string {
   return s.replace(/[\u0000-\u001f]/g, m => hexify(m.charCodeAt(0)));
 }
 
-function hexify(n) {
+function hexify(n: number): string {
   return "\\u" + ("0000" + n.toString(16)).slice(-2);
 }
 
-function format(record, stringifiers = {}, headerFields = {}, useColor) {
+function format(
+  record: LogRecord,
+  stringifiers: { [key: string]: (data: any) => (string | null) } = {},
+  headerFields: Set<string> = new Set(),
+  useColor: boolean
+) {
   let date = formatDate(record.time);
   let levelName = levelString(record.level).slice(0, 3);
   delete record.v;
@@ -54,7 +74,7 @@ function format(record, stringifiers = {}, headerFields = {}, useColor) {
     } else {
       source = `(${record.src.file}:${record.src.line}) `;
     }
-    source = cli.color("green", source);
+    source = cli.color("green", source).toString();
     delete record.src;
   }
 
@@ -70,7 +90,7 @@ function format(record, stringifiers = {}, headerFields = {}, useColor) {
     if (stringifiers[key]) {
       value = stringifiers[key](value);
       if (value != null) {
-        if (headerFields[key]) {
+        if (headerFields.has(key)) {
           headers += " " + value;
         } else {
           messages[0] += " " + value;
@@ -78,7 +98,7 @@ function format(record, stringifiers = {}, headerFields = {}, useColor) {
       }
     } else {
       if (typeof(value) != "string") value = JSON.stringify(value);
-      if (headerFields[key]) {
+      if (headerFields.has(key)) {
         headers += ` ${key}=${value}`;
       } else {
         messages[0] += ` ${key}=${value}`;
@@ -99,22 +119,29 @@ function format(record, stringifiers = {}, headerFields = {}, useColor) {
   return lines.join("\n") + "\n";
 }
 
+export interface WartRemoverOptions {
+  color?: boolean;
+  stringifiers?: { [key: string]: (data: any) => (string | null) };
+  headerFields?: string[];
+}
 
-class WartRemover extends stream.Transform {
-  constructor(options = {}) {
+export class WartRemover extends stream.Transform {
+  private useColor: boolean;
+  private stringifiers: { [key: string]: (data: any) => (string | null) };
+  private buffer: string = "";
+  private headerFields = new Set<string>();
+
+  constructor(options: WartRemoverOptions = {}) {
     super({ objectMode: true });
     this.buffer = "";
-    if (options.color == null) options.color = true;
-    if (options.stringifiers == null) options.stringifiers = {};
-    cli.useColor(options.color);
-    this.stringifiers = options.stringifiers;
-    this.headerFields = {};
-    if (options.headerFields) options.headerFields.forEach(f => this.headerFields[f] = true);
-    this.useColor = options.color;
+    this.useColor = (options.color === undefined) ? true : options.color;
+    this.stringifiers = (options.stringifiers === undefined) ? {} : options.stringifiers;
+    if (options.headerFields) options.headerFields.forEach(f => this.headerFields.add(f));
+    cli.useColor(this.useColor);
   }
 
-  _transform(chunk, encoding, callback) {
-    if (typeof chunk == "object") {
+  _transform(chunk: string | Buffer | Object, encoding: string, callback: () => void) {
+    if (!(chunk instanceof Buffer) && typeof chunk !== "string") {
       // make a shallow copy, so we don't mess up other streams.
       const obj = {};
       for (const k in chunk) obj[k] = chunk[k];
@@ -123,33 +150,30 @@ class WartRemover extends stream.Transform {
     }
 
     const lines = (this.buffer + chunk.toString()).split("\n");
-    this.buffer = lines.pop();
-    lines.forEach((line) => this.process(line));
+    this.buffer = lines.pop() || "";
+    lines.forEach(line => this.process(line));
     callback();
   }
 
-  _flush(callback) {
+  _flush(callback: () => void) {
     if (this.buffer.length > 0) this.process(this.buffer);
     this.buffer = "";
     callback();
   }
 
-  process(line) {
-    let record = null;
+  process(line: string | Object) {
+    let record: Object;
     try {
-      if (typeof line == "object") {
+      if (typeof line !== "string") {
         record = line;
       } else {
         record = JSON.parse(line);
       }
     } catch (error) {
       // not json.
-      this.push(new Buffer(line));
+      this.push(new Buffer((line || "").toString()));
       return;
     }
-    this.push(new Buffer(format(record, this.stringifiers, this.headerFields, this.useColor)));
+    this.push(new Buffer(format(record as LogRecord, this.stringifiers, this.headerFields, this.useColor)));
   }
 }
-
-
-module.exports = WartRemover;
